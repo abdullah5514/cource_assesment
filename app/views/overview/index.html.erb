@@ -1,0 +1,180 @@
+<div class="space-y-8 max-w-7xl mx-auto">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Overview</h1>
+    <p class="text-muted-foreground">Monitor scraper performance and error distribution</p>
+  </div>
+
+  <!-- Date Range Filter -->
+  <%= render_card title: "Filter Data", subtitle: "Select date range for analysis", class: "mb-4" do %>
+    <div class="p-6 space-y-4">
+      <%= form_tag overview_path, method: :get, class: "space-y-4" do %>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="text-sm font-medium">Date Range</label>
+            <%= select_tag :date_range,
+                options_for_select([
+                  ["Last 7 Days", "7days"],
+                  ["Last 30 Days", "30days"],
+                  ["Custom Range", "custom"]
+                ], @date_range),
+                class: "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" %>
+          </div>
+          <div class="flex items-end space-x-2">
+            <%= render_button "Apply Filter", variant: :default, type: "submit" do %>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                <path d="M22 3H2l8 9.46V19l4 2v-8.54z"/>
+              </svg>
+            <% end %>
+            <%= link_to overview_path, class: "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2" do %>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+              </svg>
+              Reset
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <!-- Success Rate Over Time (Chart) -->
+  <%= render_card title: "Success Rate Over Time" do %>
+    <div class="h-[400px] w-full">
+      <canvas id="successRateChart" style="width: 100%"></canvas>
+    </div>
+  <% end %>
+
+  <!-- Statistics Table below Chart -->
+  <%= render_card title: "Statistics" do %>
+    <%= render_table do %>
+      <%= table_head do %>
+        <%= table_header "Metric" %>
+        <%= table_header "Value" %>
+      <% end %>
+      <%= table_body do %>
+        <%= table_row do %>
+          <%= table_column "Today's Success Rate" %>
+          <%= table_column number_to_percentage(@today_success_rate, precision: 1).to_s %>
+        <% end %>
+        <%= table_row do %>
+          <%= table_column "7-day Average" %>
+          <%= table_column number_to_percentage(@seven_day_average, precision: 1).to_s %>
+        <% end %>
+        <%= table_row do %>
+          <%= table_column "30-day Average" %>
+          <%= table_column number_to_percentage(@thirty_day_average, precision: 1).to_s %>
+        <% end %>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <!-- Error Distribution + Error Details -->
+  <div class="grid md:grid-cols-7 gap-4">
+    <div class="md:col-span-4">
+      <%= render_card title: "Error Types Distribution" do %>
+        <div class="h-[400px]">
+          <canvas id="errorDistributionChart"></canvas>
+        </div>
+      <% end %>
+    </div>
+    <div class="md:col-span-3">
+      <%= render_card title: "Error Details" do %>
+        <%= render_table do %>
+          <%= table_head do %>
+            <%= table_header "Error Type" %>
+            <%= table_header "Count" %>
+            <%= table_header "%" %>
+          <% end %>
+          <%= table_body do %>
+            <% @error_distribution.each do |error| %>
+              <%= table_row do %>
+                <%= table_column error.error_type %>
+                <%= table_column error.count.to_s %>
+                <%= table_column number_to_percentage(error.percentage, precision: 1) %>
+              <% end %>
+            <% end %>
+          <% end %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<% content_for :head do %>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Success Rate Chart
+  const successCtx = document.getElementById('successRateChart').getContext('2d');
+  new Chart(successCtx, {
+    type: 'line',
+    data: {
+      labels: <%= raw @success_rate_data.map { |d| d.date.strftime('%Y-%m-%d') }.to_json %>,
+      datasets: [{
+        label: 'Success Rate',
+        data: <%= raw @success_rate_data.map { |d| (d.success_count.to_f / d.total_count * 100).round(1) }.to_json %>,
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            callback: function(value) {
+              return value + '%';
+            }
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return `Success Rate: ${context.parsed.y}%`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Error Distribution Chart
+  const errorCtx = document.getElementById('errorDistributionChart').getContext('2d');
+  new Chart(errorCtx, {
+    type: 'pie',
+    data: {
+      labels: <%= raw @error_distribution.map { |e| e.error_type }.to_json %>,
+      datasets: [{
+        data: <%= raw @error_distribution.map { |e| e.count }.to_json %>,
+        backgroundColor: [
+          'rgb(59, 130, 246)',   // Blue
+          'rgb(16, 185, 129)',   // Green
+          'rgb(245, 158, 11)',   // Yellow
+          'rgb(239, 68, 68)',    // Red
+          'rgb(139, 92, 246)',   // Purple
+        ]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right'
+        }
+      }
+    }
+  });
+});
+</script>

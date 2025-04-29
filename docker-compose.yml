@@ -1,0 +1,16 @@
+version: '3.9'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    environment:
+      - RAILS_ENV=development
+    depends_on:
+      - db
+
+  db:
+    image: nouchka/sqlite3 # lightweight sqlite3 container
+    restart: always

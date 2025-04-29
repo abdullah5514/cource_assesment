@@ -1,0 +1,136 @@
+<div class="space-y-8">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Courses</h1>
+    <p class="text-muted-foreground">Monitor course-specific performance metrics</p>
+  </div>
+
+  <!-- Problematic Courses -->
+  <div>
+    <%= render_card title: "Problematic Courses", subtitle: "Courses with the most errors" do %>
+      <%= render_table do %>
+        <%= table_head do %>
+          <%= table_header "Course Name" %>
+          <%= table_header "Number of Errors" %>
+          <%= table_header "Last Error" %>
+          <%= table_header "Most Common Error" %>
+        <% end %>
+        <%= table_body do %>
+          <% @problematic_courses.each do |course| %>
+            <%= table_row do %>
+              <%= table_column course.name %>
+              <%= table_column course.error_count.to_s %>
+              <%= table_column course.last_error_at&.strftime("%Y-%m-%d %H:%M") %>
+              <%= table_column course.most_common_error %>
+            <% end %>
+          <% end %>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <!-- Scraper Latency by Course -->
+  <div>
+    <%= render_card title: "Scraper Latency by Course", subtitle: "Average scrape duration per course" do %>
+      <%= render_table do %>
+        <%= table_head do %>
+          <%= table_header "Course Name" %>
+          <%= table_header "Average Duration (seconds)" %>
+          <%= table_header "Min Duration" %>
+          <%= table_header "Max Duration" %>
+        <% end %>
+        <%= table_body do %>
+          <% @latency_by_course.each do |latency| %>
+            <%= table_row do %>
+              <%= table_column latency.name %>
+              <%= table_column number_with_precision(latency.avg_duration, precision: 2) %>
+              <%= table_column number_with_precision(latency.min_duration, precision: 2) %>
+              <%= table_column number_with_precision(latency.max_duration, precision: 2) %>
+            <% end %>
+          <% end %>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <!-- Scrape Volume by Course -->
+  <div>
+    <%= render_card title: "Scrape Volume by Course", subtitle: "Filter by course and date range" do %>
+      <div class="p-6 space-y-4">
+        <!-- Filters -->
+        <%= form_tag courses_path, method: :get, class: "space-y-4" do %>
+          <div class="grid gap-4 md:grid-cols-2">
+            <div>
+              <label class="text-sm font-medium">Course</label>
+              <%= select_tag :course_id, 
+                  options_for_select([["All Courses", ""]] + @courses.map { |c| [c.name, c.id] }, params[:course_id]),
+                  class: "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" %>
+            </div>
+            <div>
+              <label class="text-sm font-medium">Date Range</label>
+              <%= select_tag :date_range,
+                  options_for_select([
+                    ["Last 7 Days", "7days"],
+                    ["Last 30 Days", "30days"],
+                    ["Custom Range", "custom"]
+                  ], params[:date_range]),
+                  class: "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
+                  id: "date_range_select" %>
+              <div id="custom_date_fields" style="display: none; margin-top: 0.5rem;">
+                <label class="text-sm font-medium">Start Date</label>
+                <%= date_field_tag :start_date, params[:start_date], class: "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background mb-2" %>
+                <label class="text-sm font-medium">End Date</label>
+                <%= date_field_tag :end_date, params[:end_date], class: "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background" %>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-end mt-4">
+            <%= render_button "Apply Filters", variant: :default, type: "submit" do %>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                <path d="M22 3H2l8 9.46V19l4 2v-8.54z"/>
+              </svg>
+              Apply Filters
+            <% end %>
+          </div>
+        <% end %>
+
+        <!-- Results Table below Chart -->
+        <%= render_table do %>
+          <%= table_head do %>
+            <%= table_header "Date" %>
+            <%= table_header "Successful Scrapes" %>
+            <%= table_header "Total Scrapes" %>
+            <%= table_header "Success Rate" %>
+          <% end %>
+          <%= table_body do %>
+            <% @scrape_volumes.each do |volume| %>
+              <%= table_row do %>
+                <%= table_column volume.date.strftime("%Y-%m-%d") %>
+                <%= table_column volume.success_count.to_s %>
+                <%= table_column volume.total_count.to_s %>
+                <%= table_column number_to_percentage((volume.success_count.to_f / volume.total_count.to_f * 100), precision: 1) %>
+              <% end %>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var dateRangeSelect = document.getElementById('date_range_select');
+  var customDateFields = document.getElementById('custom_date_fields');
+  function toggleCustomDateFields() {
+    if (dateRangeSelect.value === 'custom') {
+      customDateFields.style.display = 'block';
+    } else {
+      customDateFields.style.display = 'none';
+    }
+  }
+  dateRangeSelect.addEventListener('change', toggleCustomDateFields);
+  // Initial check
+  toggleCustomDateFields();
+
+});
+</script>

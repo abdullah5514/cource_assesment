@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Golf Scraper Dashboard</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
+    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%# Includes all stylesheet files in app/assets/stylesheets %>
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+
+  <body class="min-h-screen bg-gray-100">
+    <div class="flex">
+      <!-- Navigation Sidebar -->
+      <%= render_card class: "w-64 min-h-screen rounded-none" do %>
+        <div class="p-4 space-y-4">
+          <h2 class="text-lg font-semibold">Dashboard</h2>
+          <nav class="space-y-2">
+            <%= link_to overview_path, class: "flex items-center px-3 py-2 text-sm rounded-md hover:bg-accent #{current_page?(overview_path) ? 'bg-gray-200 font-bold' : ''}" do %>
+              <span>Overview</span>
+            <% end %>
+            <%= link_to courses_path, class: "flex items-center px-3 py-2 text-sm rounded-md hover:bg-accent #{current_page?(courses_path) ? 'bg-gray-200 font-bold' : ''}" do %>
+              <span>Courses</span>
+            <% end %>
+            <%= link_to booking_systems_path, class: "flex items-center px-3 py-2 text-sm rounded-md hover:bg-accent #{current_page?(booking_systems_path) ? 'bg-gray-200 font-bold' : ''}" do %>
+              <span>Booking Systems</span>
+            <% end %>
+          </nav>
+        </div>
+      <% end %>
+
+      <!-- Main Content -->
+      <div class="flex-1 p-8">
+        <%= yield %>
+      </div>
+    </div>
+  </body>
+</html>
