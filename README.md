@@ -57,18 +57,23 @@ This application can be deployed using Docker. Use the provided `Dockerfile` and
 
 ## Docker Setup
 
-1. Ensure Docker and Docker Compose are installed on your system.
+1. Ensure Docker is installed on your system.
 
-2. Build and start the Docker containers:
+2. Build the Docker image:
    ```bash
-   docker-compose up --build
+   docker build -t cource_assesment .
    ```
 
-3. The application will be available at `http://localhost:3000`.
-
-4. To stop the containers, run:
+3. Run the Docker container:
    ```bash
-   docker-compose down
+   docker run -p 3000:3000 cource_assesment
+   ```
+
+4. The application will be available at `http://localhost:3000`.
+
+5. To stop the container, run:
+   ```bash
+   docker stop <container_id>
    ```
 
 ## License
