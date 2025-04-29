@@ -61,19 +61,24 @@ This application can be deployed using Docker. Use the provided `Dockerfile` and
 
 2. Build the Docker image:
    ```bash
-   docker build -t cource_assesment .
+   sudo docker build -t cource_assesment .
    ```
 
-3. Run the Docker container:
+3. Run the Docker container in development mode:
    ```bash
-   docker run -p 3000:3000 cource_assesment
+   sudo docker run -it --rm -v $(pwd):/app -w /app -p 3000:3000 -e RAILS_ENV=development cource_assesment /bin/bash
    ```
 
-4. The application will be available at `http://localhost:3000`.
-
-5. To stop the container, run:
+4. Inside the container, start the Rails server:
    ```bash
-   docker stop <container_id>
+   bundle exec rails s -b 0.0.0.0
+   ```
+
+5. The application will be available at `http://localhost:3000`.
+
+6. To stop the container, run:
+   ```bash
+   sudo docker stop <container_id>
    ```
 
 ## License
