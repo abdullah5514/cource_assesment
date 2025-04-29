@@ -40,4 +40,7 @@
 /tmp/spring/*
 
 # Ignore Capybara screenshots
-/tmp/capybara/* 
+/tmp/capybara/*
+
+# Ignore source map files
+/public/assets/*.js.map 
